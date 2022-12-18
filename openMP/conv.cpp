@@ -32,7 +32,7 @@ int main(int argc,char *argv[]){
 
     gettimeofday(&start,0);
     thread_cnt=strtol(argv[1],NULL,10);
-    for(int T = 0; T < 500; T++){
+    for(int T = 0; T < RUN_NUM; T++){
         #pragma omp parallel for num_threads(thread_cnt)
         for(int i=pad;i<img.size()-pad;i++){
             for(int j=pad;j<img[0].size()-pad;j++){

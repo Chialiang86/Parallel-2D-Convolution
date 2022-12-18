@@ -54,9 +54,14 @@ void display(const vector<vector<float> >& vec) {
     }
 }
 
-int main(){
+int main(int argc, char *argv[]){
 
-    init();
+    if (argc > 2)
+        init(argv[1], argv[2]);
+    else if (argc == 2)
+        init(argv[1], "../common/kernel/kernel3x3.txt");
+    else 
+        init("../common/image/image.jpeg", "../common/kernel/kernel3x3.txt");
 
     float *img_arr, *ans_arr, *kernel_arr;
     int k_size = kernel.size();
@@ -65,27 +70,33 @@ int main(){
     ans_arr = vec2arr(ans);
     kernel_arr = vec2arr(kernel);
 
-    mallocKernelAndAns(kernel_arr, width, height, k_size);
-
     struct timeval start, end;
     gettimeofday(&start, 0);
 
     // init cuda mem
-    for(int T = 0; T < 5000; T++) {
+    mallocKernelAndAns(kernel_arr, width, height, k_size, pad);
+    for(int T = 0; T < 1; T++) {
         convolution(img_arr, ans_arr, width, height, k_size, pad);
     }
+    freeKernelAndAns();
 
     gettimeofday(&end, 0);
-    freeKernelAndAns();
 
     int sec = end.tv_sec - start.tv_sec;
     int usec = end.tv_usec - start.tv_usec;
     printf("Elapsed time: %f sec\n", (sec + (usec / 1000000.0))); 
 
     arr2vec(ans, ans_arr);
-    writeImage();
-    writeAns();
-    checkAns();
+
+    char *out_txt_name, *out_img_name;
+    out_txt_name = new char[256];
+    out_img_name = new char[256];
+    sprintf(out_txt_name, "./cuda_%s", "ans.txt");
+    sprintf(out_img_name, "./cuda%s", ".jpeg");
+    
+    writeAns(out_txt_name);
+    writeImage(out_img_name);
+    checkAns("../serial/serial_ans.txt");
 
     free(img_arr);
     free(ans_arr);

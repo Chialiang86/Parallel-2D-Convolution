@@ -36,13 +36,20 @@ void inittmp_img(){
     }
 }
 
-int main(){
-    init_sk();
+int main(int argc, char *argv[]){
+
+    if (argc > 2)
+        init_sk(argv[1], argv[2]);
+    else if (argc == 2)
+        init_sk(argv[1], "../common/kernel/kernel3x3_sk.txt");
+    else 
+        init_sk("../common/image/image.jpeg", "../common/kernel/kernel3x3_sk.txt");
+
     inittmp_img();
     struct timeval start, end;
     gettimeofday(&start, 0);
 
-    for(int T = 0; T < 500; T++){
+    for(int T = 0; T < RUN_NUM; T++){
         for(int i=pad;i<img.size()-pad;i++){
             for(int j=pad;j<img[0].size()-pad;j++){
                 tmp_img[i][j]=cov_sk(i,j,0);
@@ -60,7 +67,13 @@ int main(){
     int usec = end.tv_usec - start.tv_usec;
     printf("Elapsed time: %f sec\n", (sec+(usec/1000000.0))); 
 
-    writeImage();
-    checkAns();
+    char *out_txt_name, *out_img_name;
+    out_txt_name = new char[256];
+    out_img_name = new char[256];
+    sprintf(out_txt_name, "./serial_sk_%s", "ans.txt");
+    sprintf(out_img_name, "./image_sk%s", ".jpeg");
+    
+    writeAns(out_txt_name);
+    writeImage(out_img_name);
     return 0;
 }

@@ -7,8 +7,8 @@
 float *d_img, *d_ans, *d_kernel;
 size_t img_pitch, ans_pitch, kernel_pitch;
 
-__global__ void con(float *d_img, float *d_ans, float *d_kernel,
-                    size_t img_pitch, size_t ans_pitch, size_t kernel_pitch,
+__global__ void conv(float *d_ans, float *d_img, float *d_kernel,
+                    size_t ans_pitch, size_t img_pitch, size_t kernel_pitch,
                     int width, int height, int k_size, int pad) {
     
     int r = blockIdx.y * blockDim.y + threadIdx.y;
@@ -28,8 +28,9 @@ __global__ void con(float *d_img, float *d_ans, float *d_kernel,
     *((float*)((char*)d_ans + r * ans_pitch) + c) = res;
 }
 
-void mallocKernelAndAns(float *kernel_arr, int width, int height, int k_size) {
+void mallocKernelAndAns(float *kernel_arr, int width, int height, int k_size, int pad) {
 
+    cudaMallocPitch((void **)&d_img, &img_pitch, (width + 2 * pad) * sizeof(float), height + 2 * pad);
     cudaMallocPitch((void **)&d_ans, &ans_pitch, width * sizeof(float), height);
     cudaMallocPitch((void **)&d_kernel, &kernel_pitch, k_size * sizeof(float), k_size);
     cudaMemcpy2D(d_kernel, kernel_pitch, 
@@ -47,7 +48,6 @@ void convolution(float *img_arr,
                  int pad) {
 
     // init cuda arr
-    cudaMallocPitch((void **)&d_img, &img_pitch, (width + 2 * pad) * sizeof(float), height + 2 * pad);
     cudaMemcpy2D(d_img, img_pitch, 
                 img_arr, (width + 2 * pad) * sizeof(float), 
                 (width + 2 * pad) * sizeof(float), (height + 2 * pad), 
@@ -55,8 +55,8 @@ void convolution(float *img_arr,
     
     dim3 blockSize(BLOCK_SIZE, BLOCK_SIZE);
     dim3 numBlock(width / BLOCK_SIZE + 1, height / BLOCK_SIZE + 1);
-    con<<<numBlock, blockSize>>>(d_img, d_ans, d_kernel, 
-                                 img_pitch, ans_pitch, kernel_pitch,
+    conv<<<numBlock, blockSize>>>(d_ans, d_img, d_kernel, 
+                                 ans_pitch, img_pitch, kernel_pitch,
                                  width, height, k_size, pad);
     
     cudaMemcpy2D(ans_arr, width * sizeof(float), 
@@ -64,10 +64,10 @@ void convolution(float *img_arr,
                  width * sizeof(float), height, 
                  cudaMemcpyDeviceToHost);
 
-    cudaFree(d_img);
 }
 
 void freeKernelAndAns() {
-    cudaFree(d_kernel);
+    cudaFree(d_img);
     cudaFree(d_ans);
+    cudaFree(d_kernel);
 }
